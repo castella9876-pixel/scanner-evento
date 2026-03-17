@@ -44,10 +44,24 @@ margin-top:20px;
 function onScanSuccess(decodedText){
 
 fetch(decodedText)
-.then(r=>r.text())
-.then(data=>{
+.then(r => r.text())
+.then(data => {
 
-document.getElementById("resultado").innerText = data
+let limpio = data.replace(/<[^>]*>?/gm, '').trim()
+
+let resultado = document.getElementById("resultado")
+
+if(limpio.toLowerCase().includes("permitido")){
+
+document.body.style.background = "green"
+resultado.innerHTML = "✅ " + limpio
+
+}else{
+
+document.body.style.background = "red"
+resultado.innerHTML = "❌ " + limpio
+
+}
 
 })
 
