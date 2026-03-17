@@ -51,24 +51,36 @@ escaneando = true
 
 scanner.clear()
 
-let iframe = document.createElement("iframe")
-iframe.style.display = "none"
-iframe.src = decodedText
-
-document.body.appendChild(iframe)
-
-// Mostrar resultado visual (sin depender del fetch)
+fetch(decodedText)
+.then(r => r.json())
+.then(data => {
 
 let resultado = document.getElementById("resultado")
 
-resultado.innerHTML = "Procesando..."
-
-setTimeout(() => {
+if(data.estado === "ok"){
 
 document.body.style.background = "green"
-resultado.innerHTML = "✔ Escaneado (verificar en sistema)"
+resultado.innerHTML = "✅<br>" + data.nombre
 
-}, 1500)
+}else if(data.estado === "usado"){
+
+document.body.style.background = "orange"
+resultado.innerHTML = "⚠️ YA INGRESÓ<br>" + data.nombre
+
+}else{
+
+document.body.style.background = "red"
+resultado.innerHTML = "❌ QR INVÁLIDO"
+
+}
+
+})
+.catch(() => {
+
+document.body.style.background = "red"
+document.getElementById("resultado").innerHTML = "Error de conexión"
+
+})
 
 }
 
