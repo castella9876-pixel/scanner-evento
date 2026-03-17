@@ -41,7 +41,15 @@ margin-top:20px;
 
 <script>
 
+let scanner
+let escaneando = false
+
 function onScanSuccess(decodedText){
+
+if(escaneando) return
+escaneando = true
+
+scanner.clear() // detiene el escáner
 
 fetch(decodedText)
 .then(r => r.text())
@@ -54,20 +62,25 @@ let resultado = document.getElementById("resultado")
 if(limpio.toLowerCase().includes("permitido")){
 
 document.body.style.background = "green"
-resultado.innerHTML = "✅ " + limpio
+resultado.innerHTML = "✅<br>" + limpio
 
 }else{
 
 document.body.style.background = "red"
-resultado.innerHTML = "❌ " + limpio
+resultado.innerHTML = "❌<br>" + limpio
 
 }
 
 })
+.catch(() => {
+document.getElementById("resultado").innerHTML = "Error al validar"
+})
 
 }
 
-let scanner = new Html5QrcodeScanner(
+function iniciar(){
+
+scanner = new Html5QrcodeScanner(
 "reader",
 {
 fps:10,
@@ -77,6 +90,10 @@ videoConstraints:{ facingMode:"environment" }
 )
 
 scanner.render(onScanSuccess)
+
+}
+
+iniciar()
 
 </script>
 
