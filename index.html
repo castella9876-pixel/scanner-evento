@@ -1,120 +1,108 @@
 <!DOCTYPE html>
 <html>
 <head>
-
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Escáner</title>
-
-<script src="https://unpkg.com/html5-qrcode"></script>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body{
+body {
+margin:0;
 background:black;
 color:white;
-font-family:Arial;
 text-align:center;
-margin:0;
+font-family:sans-serif;
 }
-h1{
-margin-top:20px;
+
+#reader {
+width:100%;
 }
-#reader{
-width:90%;
-max-width:500px;
-margin:auto;
-margin-top:20px;
-}
-#resultado{
-font-size:30px;
-margin-top:20px;
+
+#resultado {
+font-size:24px;
+margin-top:10px;
 }
 </style>
-
 </head>
 
 <body>
 
-<h1>Escanear entrada</h1>
-
+<h2>Scanner QR</h2>
 <div id="reader"></div>
-<div id="resultado"></div>
+<div id="resultado">Cargando invitados...</div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
 
 <script>
 
-let scanner
+let invitados = {}
 let bloqueado = false
+
+// 🔥 CARGA INICIAL
+fetch("TU_LINK_APPS_SCRIPT")
+.then(r => r.json())
+.then(data => {
+
+data.forEach(p => {
+invitados[p.id] = {
+nombre: p.nombre + " " + p.apellido,
+usado: p.usado === "SI"
+}
+})
+
+document.getElementById("resultado").innerHTML = "Listo para escanear"
+
+iniciarScanner()
+
+})
 
 function onScanSuccess(decodedText){
 
 if(bloqueado) return
 bloqueado = true
 
-fetch(decodedText)
-.then(async (r) => {
-
-let text = await r.text()
-
-try {
-return JSON.parse(text)
-} catch(e) {
-throw new Error("Respuesta inválida: " + text)
-}
-
-})
-.then(data => {
+let id = decodedText.split("id=")[1]
 
 let resultado = document.getElementById("resultado")
 
-if(data.estado === "ok"){
+if(invitados[id]){
+
+if(!invitados[id].usado){
+
+invitados[id].usado = true
 
 document.body.style.background = "green"
-resultado.innerHTML = "✅ " + data.nombre
-
+resultado.innerHTML = "✅ " + invitados[id].nombre
 navigator.vibrate(100)
 
-}else if(data.estado === "usado"){
+}else{
 
 document.body.style.background = "orange"
-resultado.innerHTML = "⚠️ YA INGRESÓ " + data.nombre
-
+resultado.innerHTML = "⚠️ YA INGRESÓ"
 navigator.vibrate([100,50,100])
+
+}
 
 }else{
 
 document.body.style.background = "red"
-resultado.innerHTML = "❌ QR INVÁLIDO"
-
+resultado.innerHTML = "❌ INVÁLIDO"
 navigator.vibrate(200)
 
 }
 
-// 🔥 vuelve a escanear automáticamente
+// reset automático
 setTimeout(() => {
 bloqueado = false
 document.body.style.background = "black"
-resultado.innerHTML = "Listo para escanear..."
-}, 1500)
-
-})
-.catch(() => {
-
-document.body.style.background = "red"
-document.getElementById("resultado").innerHTML = "Error"
-
-setTimeout(() => {
-bloqueado = false
-}, 1500)
-
-})
+resultado.innerHTML = "Listo para escanear"
+}, 1000)
 
 }
 
-function iniciar(){
+function iniciarScanner(){
 
-scanner = new Html5QrcodeScanner(
+const scanner = new Html5QrcodeScanner(
 "reader",
 {
-fps:15, // más rápido
+fps:20,
 qrbox:250,
 videoConstraints:{ facingMode:"environment" }
 }
@@ -123,8 +111,6 @@ videoConstraints:{ facingMode:"environment" }
 scanner.render(onScanSuccess)
 
 }
-
-iniciar()
 
 </script>
 
