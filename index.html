@@ -33,7 +33,7 @@ margin-top:10px;
 <script>
 
 let invitados = {}
-let bloqueado = false
+let ultimoQR = null
 
 // 🔥 CARGA INICIAL
 fetch("https://script.google.com/macros/s/AKfycbybtLYZ_y3o11qv81Vb4eUcZaKoijK-726FP435PptHjEyshjinJdms1l_21kwDWJ-S5g/exec")
@@ -55,11 +55,11 @@ iniciarScanner()
 
 function onScanSuccess(decodedText){
 
-if(bloqueado) return
-bloqueado = true
+if(decodedText === ultimoQR) return
+
+ultimoQR = decodedText
 
 let id = decodedText.split("id=")[1]
-
 let resultado = document.getElementById("resultado")
 
 if(invitados[id]){
@@ -75,7 +75,7 @@ navigator.vibrate(100)
 }else{
 
 document.body.style.background = "orange"
-resultado.innerHTML = "⚠️ YA INGRESÓ"
+resultado.innerHTML = "⚠️ YA INGRESÓ " + invitados[id].nombre
 navigator.vibrate([100,50,100])
 
 }
@@ -88,12 +88,12 @@ navigator.vibrate(200)
 
 }
 
-// reset automático
+// 🔥 permitir escanear otro distinto inmediatamente
 setTimeout(() => {
-bloqueado = false
-document.body.style.background = "black"
-resultado.innerHTML = "Listo para escanear"
-}, 1000)
+ultimoQR = null
+}, 500)
+
+}
 
 }
 
