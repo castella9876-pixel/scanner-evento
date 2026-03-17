@@ -42,14 +42,12 @@ margin-top:20px;
 <script>
 
 let scanner
-let escaneando = false
+let bloqueado = false
 
 function onScanSuccess(decodedText){
 
-if(escaneando) return
-escaneando = true
-
-scanner.clear()
+if(bloqueado) return
+bloqueado = true
 
 fetch(decodedText)
 .then(r => r.json())
@@ -60,25 +58,42 @@ let resultado = document.getElementById("resultado")
 if(data.estado === "ok"){
 
 document.body.style.background = "green"
-resultado.innerHTML = "✅<br>" + data.nombre
+resultado.innerHTML = "✅ " + data.nombre
+
+navigator.vibrate(100)
 
 }else if(data.estado === "usado"){
 
 document.body.style.background = "orange"
-resultado.innerHTML = "⚠️ YA INGRESÓ<br>" + data.nombre
+resultado.innerHTML = "⚠️ YA INGRESÓ " + data.nombre
+
+navigator.vibrate([100,50,100])
 
 }else{
 
 document.body.style.background = "red"
 resultado.innerHTML = "❌ QR INVÁLIDO"
 
+navigator.vibrate(200)
+
 }
+
+// 🔥 vuelve a escanear automáticamente
+setTimeout(() => {
+bloqueado = false
+document.body.style.background = "black"
+resultado.innerHTML = "Listo para escanear..."
+}, 1500)
 
 })
 .catch(() => {
 
 document.body.style.background = "red"
-document.getElementById("resultado").innerHTML = "Error de conexión"
+document.getElementById("resultado").innerHTML = "Error"
+
+setTimeout(() => {
+bloqueado = false
+}, 1500)
 
 })
 
@@ -89,7 +104,7 @@ function iniciar(){
 scanner = new Html5QrcodeScanner(
 "reader",
 {
-fps:10,
+fps:15, // más rápido
 qrbox:250,
 videoConstraints:{ facingMode:"environment" }
 }
