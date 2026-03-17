@@ -37,7 +37,18 @@ let ultimoQR = null
 
 // 🔥 CARGA INICIAL
 fetch("https://script.google.com/macros/s/AKfycbybtLYZ_y3o11qv81Vb4eUcZaKoijK-726FP435PptHjEyshjinJdms1l_21kwDWJ-S5g/exec")
-.then(r => r.json())
+.then(async (r) => {
+
+let text = await r.text()
+console.log("RESPUESTA:", text)
+
+try {
+return JSON.parse(text)
+} catch(e) {
+throw new Error("No es JSON")
+}
+
+})
 .then(data => {
 
 data.forEach(p => {
