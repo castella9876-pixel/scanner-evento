@@ -1,129 +1,374 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-body {
-margin:0;
-background:black;
-color:white;
-text-align:center;
-font-family:sans-serif;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Escáner QR Invitados</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-#reader {
-width:100%;
-}
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
 
-#resultado {
-font-size:24px;
-margin-top:10px;
-}
-</style>
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .scanner-container {
+            flex: 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #video {
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            object-fit: cover;
+        }
+
+        .scanner-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 250px;
+            height: 250px;
+            border: 3px solid #00ff88;
+            border-radius: 20px;
+            box-shadow: 0 0 0 1000px rgba(0,0,0,0.5);
+            background: 
+                linear-gradient(45deg, transparent 49%, #00ff88 50%, #00ff88 51%, transparent 52%),
+                linear-gradient(-45deg, transparent 49%, #00ff88 50%, #00ff88 51%, transparent 52%);
+            background-size: 30px 30px;
+            background-position: center;
+            animation: scan 2s infinite;
+        }
+
+        @keyframes scan {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .result {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .result.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .result-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        .result.success .result-icon {
+            color: #00ff88;
+        }
+
+        .result.error .result-icon {
+            color: #ff4444;
+        }
+
+        .result.warning .result-icon {
+            color: #ffaa00;
+        }
+
+        .result-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .result-text {
+            font-size: 18px;
+            color: rgba(255,255,255,0.9);
+            text-align: center;
+            max-width: 300px;
+            line-height: 1.4;
+        }
+
+        .btn-close {
+            position: absolute;
+            top: 30px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 24px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+
+        .status {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.95);
+            padding: 15px 25px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: white;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        @media (max-width: 500px) {
+            #video {
+                max-width: 90vw;
+                height: 60vw;
+            }
+            
+            .scanner-overlay {
+                width: 70vw;
+                height: 70vw;
+            }
+        }
+    </style>
 </head>
-
 <body>
+    <div class="header">
+        <h1>🎉 Lista de Invitados</h1>
+        <p>Escanea el código QR para validar entrada</p>
+    </div>
 
-<h2>Scanner QR</h2>
-<div id="reader"></div>
-<div id="resultado">Cargando Mogolicos...</div>
+    <div class="scanner-container">
+        <video id="video" autoplay playsinline muted></video>
+        <div class="scanner-overlay"></div>
+        <div class="loading" id="loading">
+            🔍 Escaneando...
+        </div>
+        <div class="status" id="status">Apunta el QR al centro</div>
+    </div>
 
-<script src="https://unpkg.com/html5-qrcode"></script>
+    <div class="result" id="result">
+        <button class="btn-close" onclick="closeResult()">✕</button>
+        <div class="result-icon" id="resultIcon"></div>
+        <div class="result-title" id="resultTitle"></div>
+        <div class="result-text" id="resultText"></div>
+    </div>
 
-<script>
+    <script>
+        // CAMBIA ESTA URL POR LA DE TU APP SCRIPT
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwfRB71uZlhR71JYYHcLjme3Ey4_dcdxByN0Bz-gt2xly1QwWaakX5w9WRN6IFw54M8Aw/exec';
+        
+        let scanner = null;
+        let currentStream = null;
 
-let invitados = {}
-let ultimoQR = null
+        // Inicializar escáner
+        async function initScanner() {
+            try {
+                const video = document.getElementById('video');
+                
+                // Solicitar permisos de cámara
+                currentStream = await navigator.mediaDevices.getUserMedia({
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    }
+                });
 
-// 🔥 CARGA INICIAL
-fetch("https://script.google.com/macros/s/AKfycbwk2upXn5Sp53AZICtykq5cgTbFMcwKA9MyfUEZ1uWGixq40XOtnLmL9_pv9BH8_iJ-5Q/exec")
-.then(async (r) => {
+                video.srcObject = currentStream;
 
-let text = await r.text()
-console.log("RESPUESTA:", text)
+                // Inicializar jsQR
+                const script = document.createElement('script');
+                script.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
+                document.head.appendChild(script);
 
-try {
-return JSON.parse(text)
-} catch(e) {
-throw new Error("No es JSON")
-}
+                script.onload = () => {
+                    startScanning();
+                };
 
-})
-.then(data => {
+            } catch (err) {
+                showStatus('Error de cámara: ' + err.message, 'error');
+            }
+        }
 
-data.forEach(p => {
-invitados[p.id] = {
-nombre: p.nombre + " " + p.apellido,
-usado: p.usado === "SI"
-}
-})
+        function startScanning() {
+            const video = document.getElementById('video');
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const loading = document.getElementById('loading');
 
-document.getElementById("resultado").innerHTML = "Listo para escanear"
+            function scan() {
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    
+                    if (code) {
+                        loading.classList.add('show');
+                        validateQR(code.data);
+                        return;
+                    }
+                }
+                
+                requestAnimationFrame(scan);
+            }
+            
+            scan();
+        }
 
-iniciarScanner()
+        async function validateQR(qrCode) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'validate',
+                        qrCode: qrCode
+                    })
+                });
 
-})
+                const result = await response.json();
+                showResult(result);
+            } catch (error) {
+                showResult({
+                    valid: false,
+                    message: 'Error de conexión',
+                    name: '',
+                    scanned: false
+                });
+            }
+        }
 
-function onScanSuccess(decodedText){
+        function showResult(result) {
+            const resultEl = document.getElementById('result');
+            const iconEl = document.getElementById('resultIcon');
+            const titleEl = document.getElementById('resultTitle');
+            const textEl = document.getElementById('resultText');
 
-if(decodedText === ultimoQR) return
+            if (result.valid && !result.scanned) {
+                // Válido y no escaneado
+                iconEl.innerHTML = '✅';
+                titleEl.textContent = '¡Entrada VÁLIDA!';
+                textEl.textContent = `Bienvenido(a): ${result.name}`;
+                resultEl.className = 'result show success';
+            } else if (result.valid && result.scanned) {
+                // Ya escaneado
+                iconEl.innerHTML = '⚠️';
+                titleEl.textContent = 'Ya escaneado';
+                textEl.textContent = `${result.name} ya ingresó`;
+                resultEl.className = 'result show warning';
+            } else {
+                // Inválido
+                iconEl.innerHTML = '❌';
+                titleEl.textContent = 'Código INVÁLIDO';
+                textEl.textContent = result.message || 'Este código no está en la lista';
+                resultEl.className = 'result show error';
+            }
 
-ultimoQR = decodedText
+            document.getElementById('loading').classList.remove('show');
+        }
 
-let id = decodedText.split("id=")[1]
-let resultado = document.getElementById("resultado")
+        function closeResult() {
+            document.getElementById('result').classList.remove('show');
+            document.getElementById('loading').classList.remove('show');
+        }
 
-if(invitados[id]){
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            
+            if (type === 'error') {
+                statusEl.style.background = 'rgba(255, 68, 68, 0.95)';
+                statusEl.style.color = 'white';
+            } else {
+                statusEl.style.background = 'rgba(255,255,255,0.95)';
+                statusEl.style.color = '#333';
+            }
+        }
 
-if(!invitados[id].usado){
+        // Eventos
+        document.addEventListener('DOMContentLoaded', initScanner);
+        
+        // Manejar visibilidad de página (para iOS)
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && currentStream) {
+                initScanner();
+            }
+        });
 
-invitados[id].usado = true
+        // Prevenir zoom en iOS
+        document.addEventListener('gesturestart', function (e) {
+            e.preventDefault();
+        });
 
-document.body.style.background = "green"
-resultado.innerHTML = "✅ " + invitados[id].nombre
-navigator.vibrate(100)
-
-}else{
-
-document.body.style.background = "orange"
-resultado.innerHTML = "⚠️ YA INGRESÓ " + invitados[id].nombre
-navigator.vibrate([100,50,100])
-
-}
-
-}else{
-
-document.body.style.background = "red"
-resultado.innerHTML = "❌ INVÁLIDO"
-navigator.vibrate(200)
-
-}
-
-// 🔥 permitir escanear otro distinto inmediatamente
-setTimeout(() => {
-ultimoQR = null
-}, 500)
-
-}
-
-}
-
-function iniciarScanner(){
-
-const scanner = new Html5QrcodeScanner(
-"reader",
-{
-fps:20,
-qrbox:250,
-videoConstraints:{ facingMode:"environment" }
-}
-)
-
-scanner.render(onScanSuccess)
-
-}
-
-</script>
-
+        document.addEventListener('touchmove', function (e) {
+            if (e.scale !== 1) { e.preventDefault(); }
+        }, { passive: false });
+    </script>
 </body>
 </html>
